@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-sans: "Source Sans 3", sans-serif;
+  --color-ink: #1c1915;
+  --color-paper: #f4efe4;
+  --color-card: #fffaf2;
+  --color-pine: #1f5c4d;
+  --color-pine-dark: #164539;
+  --color-clay: #c45c26;
+  --color-line: #e4d9c5;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}

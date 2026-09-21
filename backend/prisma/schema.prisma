@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  VENDEDOR
+}
+
+enum DocumentType {
+  DNI
+  RUC
+}
+
+enum ReceiptType {
+  BOLETA
+  FACTURA
+}
+
+enum BoletaDocumentMode {
+  NONE
+  DNI
+}
+
+enum InventoryMovementType {
+  IN
+  OUT
+  SALE
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  sales        Sale[]
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  products  Product[]
+}
+
+model Product {
+  id          String               @id @default(uuid())
+  code        String               @unique
+  name        String
+  price       Decimal              @db.Decimal(12, 2)
+  stock       Int                  @default(0)
+  minStock    Int                  @default(5)
+  imagePath   String?
+  categoryId  String
+  category    Category             @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  saleItems   SaleItem[]
+  movements   InventoryMovement[]
+
+  @@index([name])
+  @@index([categoryId])
+}
+
+model Customer {
+  id             String       @id @default(uuid())
+  documentType   DocumentType
+  documentNumber String
+  name           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  sales          Sale[]
+
+  @@unique([documentType, documentNumber])
+  @@index([name])
+}
+
+model Sale {
+  id                   String             @id @default(uuid())
+  receiptType          ReceiptType
+  boletaDocumentMode   BoletaDocumentMode?
+  customerId           String?
+  customer             Customer?          @relation(fields: [customerId], references: [id])
+  documentNumber       String?
+  customerName         String?
+  ruc                  String?
+  businessName         String?
+  subtotal             Decimal            @db.Decimal(12, 2)
+  total                Decimal            @db.Decimal(12, 2)
+  soldAt               DateTime           @default(now())
+  userId               String
+  user                 User               @relation(fields: [userId], references: [id])
+  items                SaleItem[]
+  movements            InventoryMovement[]
+  createdAt            DateTime           @default(now())
+
+  @@index([soldAt])
+  @@index([userId])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(12, 2)
+  subtotal  Decimal @db.Decimal(12, 2)
+}
+
+model InventoryMovement {
+  id            String                 @id @default(uuid())
+  productId     String
+  product       Product                @relation(fields: [productId], references: [id])
+  type          InventoryMovementType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  note          String?
+  saleId        String?
+  sale          Sale?                  @relation(fields: [saleId], references: [id])
+  createdAt     DateTime               @default(now())
+
+  @@index([productId])
+  @@index([createdAt])
+}
