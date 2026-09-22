@@ -19,45 +19,27 @@ export function NewSalePage() {
   const [by, setBy] = useState<"any" | "name" | "code">("any");
   const [results, setResults] = useState<Product[]>([]);
 
-  // ------------------------------------------------------------
-  // CARRITO
-  // ------------------------------------------------------------
   const [cart, setCart] = useState<CartItem[]>([]);
   const [editingQty, setEditingQty] = useState<Record<string, string>>({});
 
-  // ------------------------------------------------------------
-  // COMPROBANTE
-  // ------------------------------------------------------------
   const [receiptType, setReceiptType] =
     useState<ReceiptType>("BOLETA");
 
   const [boletaMode, setBoletaMode] =
     useState<BoletaDocumentMode>("NONE");
 
-  // ------------------------------------------------------------
-  // CLIENTE
-  // ------------------------------------------------------------
   const [customerQuery, setCustomerQuery] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
-  // ------------------------------------------------------------
-  // DATOS DE BOLETA / FACTURA
-  // ------------------------------------------------------------
   const [documentNumber, setDocumentNumber] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [ruc, setRuc] = useState("");
   const [businessName, setBusinessName] = useState("");
 
-  // ------------------------------------------------------------
-  // ESTADO GENERAL
-  // ------------------------------------------------------------
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ------------------------------------------------------------
-  // TOTAL
-  // ------------------------------------------------------------
   const total = useMemo(
     () =>
       cart.reduce(
@@ -68,9 +50,6 @@ export function NewSalePage() {
     [cart],
   );
 
-  // ============================================================
-  // BUSCAR PRODUCTOS
-  // ============================================================
 
   async function searchProducts() {
     const search = term.trim();
@@ -97,7 +76,6 @@ export function NewSalePage() {
     }
   }
 
-  // Búsqueda automática mientras escribes
   useEffect(() => {
     const search = term.trim();
 
@@ -113,9 +91,6 @@ export function NewSalePage() {
     return () => window.clearTimeout(timer);
   }, [term, by]);
 
-  // ============================================================
-  // AGREGAR PRODUCTO AL CARRITO
-  // ============================================================
 
   function addProduct(product: Product) {
     if (product.stock <= 0) {
@@ -132,7 +107,6 @@ export function NewSalePage() {
         (item) => item.product.id === product.id,
       );
 
-      // Si ya está en el carrito
       if (existing) {
         if (existing.quantity >= product.stock) {
           setError(
@@ -152,7 +126,6 @@ export function NewSalePage() {
         );
       }
 
-      // Producto nuevo
       return [
         ...current,
         {
@@ -162,10 +135,6 @@ export function NewSalePage() {
       ];
     });
   }
-
-  // ============================================================
-  // CAMBIAR CANTIDAD
-  // ============================================================
 
   function setQty(id: string, quantity: number) {
     if (!Number.isFinite(quantity) || quantity < 1) {
@@ -187,10 +156,6 @@ export function NewSalePage() {
     );
   }
 
-  // ============================================================
-  // ELIMINAR PRODUCTO COMPLETO DEL CARRITO
-  // ============================================================
-
   function removeFromCart(id: string) {
     setCart((current) =>
       current.filter((item) => item.product.id !== id),
@@ -202,10 +167,6 @@ export function NewSalePage() {
       return next;
     });
   }
-
-  // ============================================================
-  // BUSCAR CLIENTES
-  // ============================================================
 
   async function searchCustomers(event: FormEvent) {
     event.preventDefault();
@@ -232,11 +193,7 @@ export function NewSalePage() {
     }
   }
 
-  // ============================================================
-  // SELECCIONAR CLIENTE
-  // ============================================================
-
-  function selectCustomer(next: Customer) {
+ function selectCustomer(next: Customer) {
     setCustomer(next);
 
     if (next.documentType === "DNI") {
@@ -254,10 +211,6 @@ export function NewSalePage() {
 
     setCustomers([]);
   }
-
-  // ============================================================
-  // CAMBIAR TIPO DE COMPROBANTE
-  // ============================================================
 
   function changeReceiptType(type: ReceiptType) {
     setReceiptType(type);
@@ -277,9 +230,6 @@ export function NewSalePage() {
     }
   }
 
-  // ============================================================
-  // VALIDACIONES ANTES DE VENDER
-  // ============================================================
 
   function validateSale(): string | null {
     if (cart.length === 0) {
@@ -297,10 +247,6 @@ export function NewSalePage() {
       }
     }
 
-    // ----------------------------------------------------------
-    // BOLETA CON DNI
-    // ----------------------------------------------------------
-
     if (
       receiptType === "BOLETA" &&
       boletaMode === "DNI"
@@ -317,9 +263,6 @@ export function NewSalePage() {
       }
     }
 
-    // ----------------------------------------------------------
-    // FACTURA
-    // ----------------------------------------------------------
 
     if (receiptType === "FACTURA") {
       const cleanRuc = ruc.trim();
@@ -336,10 +279,6 @@ export function NewSalePage() {
 
     return null;
   }
-
-  // ============================================================
-  // REGISTRAR VENTA
-  // ============================================================
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -414,17 +353,11 @@ export function NewSalePage() {
     }
   }
 
-  // ============================================================
-  // RENDER
-  // ============================================================
 
   return (
     <form
       onSubmit={submit}
       onKeyDown={(event) => {
-        // IMPORTANTE:
-        // Evita que ENTER dentro de cualquier input
-        // registre accidentalmente la venta.
         if (
           event.key === "Enter" &&
           event.target instanceof HTMLInputElement
@@ -769,9 +702,7 @@ export function NewSalePage() {
       ======================================================= */}
 
       <section className="space-y-4">
-        {/* ----------------------------------------------------
-            COMPROBANTE
-        ----------------------------------------------------- */}
+        {/* COMPROBANTE */}
 
         <div className="rounded-3xl border border-line bg-card p-5">
           <h2 className="font-display text-2xl">
@@ -799,9 +730,7 @@ export function NewSalePage() {
             )}
           </div>
 
-          {/* --------------------------------------------------
-              BOLETA
-          --------------------------------------------------- */}
+          {/* BOLETA */}
 
           {receiptType === "BOLETA" && (
             <div className="mt-4 space-y-3">
@@ -861,9 +790,7 @@ export function NewSalePage() {
             </div>
           )}
 
-          {/* --------------------------------------------------
-              FACTURA
-          --------------------------------------------------- */}
+          {/* FACTURA */}
 
           {receiptType === "FACTURA" && (
             <div className="mt-4 space-y-3">
@@ -897,9 +824,7 @@ export function NewSalePage() {
           )}
         </div>
 
-        {/* ----------------------------------------------------
-            CLIENTE
-        ----------------------------------------------------- */}
+        {/* CLIENTE- */}
 
         <div className="rounded-3xl border border-line bg-card p-5">
           <h2 className="font-display text-2xl">
@@ -962,9 +887,7 @@ export function NewSalePage() {
           )}
         </div>
 
-        {/* ----------------------------------------------------
-            ERROR
-        ----------------------------------------------------- */}
+        {/* ERROR*/}
 
         {error && (
           <div className="rounded-2xl border border-clay/20 bg-clay/5 p-3 text-sm text-clay">
