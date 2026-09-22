@@ -15,6 +15,7 @@ import type { Customer } from "../src/modules/customers/domain/entities/Customer
 import { BoletaValidator } from "../src/modules/sales/domain/receipt/BoletaValidator.js";
 import { FacturaValidator } from "../src/modules/sales/domain/receipt/FacturaValidator.js";
 import { ReceiptValidationService } from "../src/modules/sales/application/services/ReceiptValidationService.js";
+import { SaleItemBuilder } from "../src/modules/sales/application/services/SaleItemBuilder.js";
 
 function product(
   partial: Partial<Product> &
@@ -145,6 +146,7 @@ describe("RegisterSaleUseCase", () => {
       new InMemoryCustomers(),
       writer,
       createReceiptValidationService(),
+      new SaleItemBuilder(),
     );
 
     const sale = await useCase.execute({
@@ -176,6 +178,7 @@ describe("RegisterSaleUseCase", () => {
       new InMemoryCustomers(),
       new FakeSaleWriter(),
       createReceiptValidationService(),
+      new SaleItemBuilder(),
     );
 
     await expect(
@@ -195,6 +198,7 @@ describe("RegisterSaleUseCase", () => {
       new InMemoryCustomers(),
       writer,
       createReceiptValidationService(),
+      new SaleItemBuilder(),
     );
 
     const sale = await useCase.execute({

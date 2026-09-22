@@ -1,22 +1,24 @@
 import { randomUUID } from "node:crypto";
+
 import {
   NotFoundError,
   ValidationError,
 } from "../../../../shared/errors/AppError.js";
-import { lineSubtotal, sumTotals } from "../../../../shared/utils/money.js";
+import { sumTotals } from "../../../../shared/utils/money.js";
+
 import type { ProductRepository } from "../../../products/domain/ports/ProductRepository.js";
-import { applyStockChange } from "../../../inventory/domain/entities/InventoryMovement.js";
-import type { InventoryMovement } from "../../../inventory/domain/entities/InventoryMovement.js";
 import type { CustomerRepository } from "../../../customers/domain/ports/CustomerRepository.js";
+
 import {
   type BoletaDocumentMode,
   type ReceiptType,
   type Sale,
-  type SaleItem,
 } from "../../domain/entities/Sale.js";
+
 import type { SaleRegistrationWriter } from "../../domain/ports/SaleRepository.js";
-import type { Product } from "../../../products/domain/entities/Product.js";
+
 import { ReceiptValidationService } from "../services/ReceiptValidationService.js";
+import { SaleItemBuilder } from "../services/SaleItemBuilder.js";
 
 export type RegisterSaleItemInput = {
   productId: string;
@@ -41,6 +43,7 @@ export class RegisterSaleUseCase {
     private readonly customers: CustomerRepository,
     private readonly writer: SaleRegistrationWriter,
     private readonly receiptValidation: ReceiptValidationService,
+    private readonly saleItemBuilder: SaleItemBuilder,
   ) {}
 
   async execute(input: RegisterSaleInput): Promise<Sale> {
@@ -58,73 +61,24 @@ export class RegisterSaleUseCase {
     const found = await this.products.findByIds(productIds);
 
     if (found.length !== productIds.length) {
-      throw new NotFoundError("Uno o más productos no existen");
+      throw new NotFoundError(
+        "Uno o más productos no existen",
+      );
     }
-
-    const productMap = new Map(found.map((p) => [p.id, p]));
-
-    const saleItems: SaleItem[] = [];
-    const updatedProducts: Product[] = [];
-    const movements: InventoryMovement[] = [];
 
     const saleId = randomUUID();
     const now = new Date();
 
-    for (const [productId, quantity] of quantities) {
-      const product = productMap.get(productId)!;
-
-      let newStock: number;
-
-      try {
-        newStock = applyStockChange(
-          product.stock,
-          "SALE",
-          quantity,
-        );
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "";
-
-        if (message === "INSUFFICIENT_STOCK") {
-          throw new ValidationError(
-            `Stock insuficiente para ${product.name}`,
-          );
-        }
-
-        throw new ValidationError("Cantidad inválida");
-      }
-
-      const unitPrice = product.price;
-      const subtotal = lineSubtotal(unitPrice, quantity);
-
-      saleItems.push({
-        id: randomUUID(),
-        productId: product.id,
-        productName: product.name,
-        productCode: product.code,
-        quantity,
-        unitPrice,
-        subtotal,
-      });
-
-      updatedProducts.push({
-        ...product,
-        stock: newStock,
-        updatedAt: now,
-      });
-
-      movements.push({
-        id: randomUUID(),
-        productId: product.id,
-        type: "SALE",
-        quantity,
-        previousStock: product.stock,
-        newStock,
-        note: "Venta",
-        saleId,
-        createdAt: now,
-      });
-    }
+    const {
+      saleItems,
+      updatedProducts,
+      movements,
+    } = this.saleItemBuilder.build(
+      quantities,
+      found,
+      saleId,
+      now,
+    );
 
     const total = sumTotals(
       saleItems.map((item) => item.subtotal),
@@ -150,7 +104,9 @@ export class RegisterSaleUseCase {
         await this.customers.findById(customerId);
 
       if (!customer) {
-        throw new NotFoundError("Cliente no encontrado");
+        throw new NotFoundError(
+          "Cliente no encontrado",
+        );
       }
 
       if (
