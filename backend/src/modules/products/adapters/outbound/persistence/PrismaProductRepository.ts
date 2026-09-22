@@ -6,6 +6,7 @@ import type {
   ProductSearchQuery,
 } from "../../../domain/ports/ProductRepository.js";
 import { toProduct } from "../../../../../infrastructure/database/prisma/mappers.js";
+import { ConflictError } from "../../../../../shared/errors/AppError.js";
 
 export class PrismaProductRepository implements ProductRepository {
   constructor(private readonly db: PrismaClient) {}
@@ -25,13 +26,14 @@ export class PrismaProductRepository implements ProductRepository {
     return rows.map(toProduct);
   }
 
-  async list(filters?: ProductFilters) {
-    const rows = await this.db.product.findMany({
-      where: {
-        categoryId: filters?.categoryId,
-      },
-      orderBy: { name: "asc" },
-    });
+  async list(filters?: ProductFilters) { 
+    const rows = await this.db.product.findMany({ 
+      where: { 
+        active: true,
+        categoryId: filters?.categoryId, 
+      }, 
+      orderBy: { name: "asc" }, 
+    }); 
     return rows.map(toProduct);
   }
 
@@ -50,10 +52,13 @@ export class PrismaProductRepository implements ProductRepository {
               ],
             };
 
-    const rows = await this.db.product.findMany({
-      where,
-      orderBy: { name: "asc" },
-      take: 20,
+    const rows = await this.db.product.findMany({ 
+      where: {
+        ...where,
+        active: true,
+      },
+      orderBy: { name: "asc" }, 
+      take: 20, 
     });
     return rows.map(toProduct);
   }
@@ -94,6 +99,9 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async delete(id: string) {
-    await this.db.product.delete({ where: { id } });
+    await this.db.product.update({
+      where: { id },
+      data: { active: false },
+    });
   }
 }
